@@ -49,27 +49,6 @@ if (!defined('WPINC')) {
  */
 define('ZLP_VERSION', '1.0.0');
 
-/**
- * Begins execution of the plugin.
- *
- * Since everything within the plugin is registered via hooks,
- * then kicking off the plugin from this point in the file does
- * not affect the page life cycle.
- *
- * @since    1.0.0
- */
-// function run_zlp()
-// {
-// 	if ( !class_exists( 'WooCommerce' ) ) {
-// 		require_once( ABSPATH . 'wp-admin/includes/plugin.php' );
-// 		add_action( 'admin_notices', 'missing_wc_notice' );
-// 		deactivate_plugins(plugin_basename( __FILE__ ) );
-// 		return;
-// 	}else {
-// 		$plugin = new Zlp();
-// 		$plugin->run();
-// 	}
-// }
 
 /**
  * WooCommerce fallback notice.
@@ -89,7 +68,7 @@ add_action( 'plugins_loaded', 'zlp_init' );
 function zlp_init() {
 	load_plugin_textdomain( 'zlp', false, plugin_basename( dirname( __FILE__ ) ) . '/languages' );
 
-	if ( ! class_exists( 'Z-lp' ) ) :
+	if ( ! class_exists( 'Zlp' ) ) :
 
 		class Zlp {
 
@@ -142,55 +121,13 @@ function zlp_init() {
 			 * @version 4.0.0
 			 */
 			public function init() {
-				// if ( is_admin() ) {
-				// 	require_once dirname( __FILE__ ) . '/includes/admin/class-wc-stripe-privacy.php';
-				// }
-
 				require_once dirname( __FILE__ ) . '/includes/class-wc-zlp-exception.php';
 				require_once dirname( __FILE__ ) . '/includes/class-wc-zlp-logger.php';
-				// require_once dirname( __FILE__ ) . '/includes/class-wc-stripe-helper.php';
 				include_once dirname( __FILE__ ) . '/includes/class-wc-zlp-api.php';
-				// require_once dirname( __FILE__ ) . '/includes/abstracts/abstract-wc-zlp-payment-gateway.php';
-				// require_once dirname( __FILE__ ) . '/includes/class-wc-stripe-webhook-handler.php';
-				// require_once dirname( __FILE__ ) . '/includes/class-wc-stripe-sepa-payment-token.php';
-				// require_once dirname( __FILE__ ) . '/includes/class-wc-stripe-apple-pay-registration.php';
-				// require_once dirname( __FILE__ ) . '/includes/compat/class-wc-stripe-pre-orders-compat.php';
 				require_once dirname( __FILE__ ) . '/includes/class-wc-gateway-zlp.php';
 				require_once dirname( __FILE__ ) . '/includes/class-wc-zlp-order-handler.php';
-				// require_once dirname( __FILE__ ) . '/includes/payment-methods/class-wc-gateway-stripe-bancontact.php';
-				// require_once dirname( __FILE__ ) . '/includes/payment-methods/class-wc-gateway-stripe-sofort.php';
-				// require_once dirname( __FILE__ ) . '/includes/payment-methods/class-wc-gateway-stripe-giropay.php';
-				// require_once dirname( __FILE__ ) . '/includes/payment-methods/class-wc-gateway-stripe-eps.php';
-				// require_once dirname( __FILE__ ) . '/includes/payment-methods/class-wc-gateway-stripe-ideal.php';
-				// require_once dirname( __FILE__ ) . '/includes/payment-methods/class-wc-gateway-stripe-p24.php';
-				// require_once dirname( __FILE__ ) . '/includes/payment-methods/class-wc-gateway-stripe-alipay.php';
-				// require_once dirname( __FILE__ ) . '/includes/payment-methods/class-wc-gateway-stripe-sepa.php';
-				// require_once dirname( __FILE__ ) . '/includes/payment-methods/class-wc-gateway-stripe-multibanco.php';
-				// require_once dirname( __FILE__ ) . '/includes/payment-methods/class-wc-stripe-payment-request.php';
-				// require_once dirname( __FILE__ ) . '/includes/compat/class-wc-stripe-subs-compat.php';
-				// require_once dirname( __FILE__ ) . '/includes/compat/class-wc-stripe-sepa-subs-compat.php';
-				// require_once dirname( __FILE__ ) . '/includes/class-wc-stripe-order-handler.php';
-				// require_once dirname( __FILE__ ) . '/includes/class-wc-stripe-payment-tokens.php';
-				// require_once dirname( __FILE__ ) . '/includes/class-wc-stripe-customer.php';
-				// require_once dirname( __FILE__ ) . '/includes/class-wc-stripe-intent-controller.php';
-
-				// if ( is_admin() ) {
-				// 	require_once dirname( __FILE__ ) . '/includes/admin/class-wc-stripe-admin-notices.php';
-				// }
-
-				// REMOVE IN THE FUTURE.
-				// require_once dirname( __FILE__ ) . '/includes/deprecated/class-wc-stripe-apple-pay.php';
-
 				add_filter( 'woocommerce_payment_gateways', array( $this, 'add_gateways' ) );
 				add_filter( 'plugin_action_links_' . plugin_basename( __FILE__ ), array( $this, 'plugin_action_links' ) );
-				// add_filter( 'plugin_row_meta', array( $this, 'plugin_row_meta' ), 10, 2 );
-
-				// Modify emails emails.
-				// add_filter( 'woocommerce_email_classes', array( $this, 'add_emails' ), 20 );
-
-				// if ( version_compare( WC_VERSION, '3.4', '<' ) ) {
-				// 	add_filter( 'woocommerce_get_sections_checkout', array( $this, 'filter_gateway_order_admin' ) );
-				// }
 			}
 
 			/**
@@ -208,9 +145,9 @@ function zlp_init() {
 					deactivate_plugins(plugin_basename( __FILE__ ) );
 					return;
 				}elseif ( ! in_array( get_woocommerce_currency(), $this->get_supported_currency() ) ) {
-					// add_action( 'admin_notices', 'zlp_unsupported_currency_notice' );
-					// deactivate_plugins(plugin_basename( __FILE__ ) );
-					// return;
+					add_action( 'admin_notices', 'zlp_unsupported_currency_notice' );
+					deactivate_plugins(plugin_basename( __FILE__ ) );
+					return;
 				}
 			}
 
@@ -239,25 +176,6 @@ function zlp_init() {
 			}
 
 			/**
-			 * Add plugin action links.
-			 *
-			 * @since 4.3.4
-			 * @param  array  $links Original list of plugin links.
-			 * @param  string $file  Name of current file.
-			 * @return array  $links Update list of plugin links.
-			 */
-			// public function plugin_row_meta( $links, $file ) {
-			// 	if ( plugin_basename( __FILE__ ) === $file ) {
-			// 		$row_meta = array(
-			// 			'docs'    => '<a href="' . esc_url( apply_filters( 'woocommerce_gateway_stripe_docs_url', 'https://docs.woocommerce.com/document/stripe/' ) ) . '" title="' . esc_attr( __( 'View Documentation', 'woocommerce-gateway-stripe' ) ) . '">' . __( 'Docs', 'woocommerce-gateway-stripe' ) . '</a>',
-			// 			'support' => '<a href="' . esc_url( apply_filters( 'woocommerce_gateway_stripe_support_url', 'https://woocommerce.com/my-account/create-a-ticket?select=18627' ) ) . '" title="' . esc_attr( __( 'Open a support request at WooCommerce.com', 'woocommerce-gateway-stripe' ) ) . '">' . __( 'Support', 'woocommerce-gateway-stripe' ) . '</a>',
-			// 		);
-			// 		return array_merge( $links, $row_meta );
-			// 	}
-			// 	return (array) $links;
-			// }
-
-			/**
 			 * Add the gateways to WooCommerce.
 			 *
 			 * @since 1.0.0
@@ -278,28 +196,7 @@ function zlp_init() {
 				unset( $sections['zlp'] );
 				$sections['zlp']            = __( 'ZaloPay', 'woocommerce-gateway-zalopay' );
 				return $sections;
-			}
-
-			/**
-			 * Adds the failed SCA auth email to WooCommerce.
-			 *
-			 * @param WC_Email[] $email_classes All existing emails.
-			 * @return WC_Email[]
-			 */
-			// public function add_emails( $email_classes ) {
-			// 	require_once WC_STRIPE_PLUGIN_PATH . '/includes/compat/class-wc-stripe-email-failed-authentication.php';
-			// 	require_once WC_STRIPE_PLUGIN_PATH . '/includes/compat/class-wc-stripe-email-failed-renewal-authentication.php';
-			// 	require_once WC_STRIPE_PLUGIN_PATH . '/includes/compat/class-wc-stripe-email-failed-preorder-authentication.php';
-			// 	require_once WC_STRIPE_PLUGIN_PATH . '/includes/compat/class-wc-stripe-email-failed-authentication-retry.php';
-
-				// Add all emails, generated by the gateway.
-			// 	$email_classes['WC_Stripe_Email_Failed_Renewal_Authentication']  = new WC_Stripe_Email_Failed_Renewal_Authentication( $email_classes );
-			// 	$email_classes['WC_Stripe_Email_Failed_Preorder_Authentication'] = new WC_Stripe_Email_Failed_Preorder_Authentication( $email_classes );
-			// 	$email_classes['WC_Stripe_Email_Failed_Authentication_Retry'] = new WC_Stripe_Email_Failed_Authentication_Retry( $email_classes );
-
-			// 	return $email_classes;
-			// }
-			
+			}			
 		}
 
 		Zlp::get_instance();

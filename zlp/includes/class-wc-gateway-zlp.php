@@ -12,22 +12,20 @@ class WC_Gateway_ZaloPay extends WC_Payment_Gateway
 {
 	public $appID;
 	public $key1;
-	// ZaloPay key2
 	public $key2;
 	public $sandboxMode;
+	public $orderDescription;
+
 	/**
 	 * Constructor
 	 */
 
 	public function __construct()
 	{
-		$this->id = 'zlp'; // payment gateway plugin ID
-		$this->icon = plugins_url('assets/images/logozlp1.png', dirname(__FILE__)); // URL of the icon that will be displayed on checkout page near your gateway name
-		$this->has_fields = false; // in case you need a custom credit card form
-		$this->method_description = __('ZaloPay Merchant Intergration Plugin.', 'woocommerce-gateway-zalopay'); // will be displayed on the options page
-
-		// gateways can support subscriptions, refunds, saved payment methods,
-		// but in this tutorial we begin with simple payments
+		$this->id = 'zlp';
+		$this->icon = plugins_url('assets/images/logozlp1.png', dirname(__FILE__));
+		$this->has_fields = false;
+		$this->method_description = __('ZaloPay Merchant Intergration Plugin.', 'woocommerce-gateway-zalopay');
 		$this->supports           = array(
 			'products',
 			'refunds',
@@ -44,17 +42,13 @@ class WC_Gateway_ZaloPay extends WC_Payment_Gateway
 		$this->key1 = $this->key1 ? $this->key1 : $this->get_option('key1');
 		$this->key2 = $this->key2 ? $this->key2 : $this->get_option('key2');
 		$this->sandboxMode = $this->sandboxMode ? $this->sandboxMode : $this->get_option('sandboxMode');
-		// $this->publishable_key = $this->testmode ? $this->get_option('test_publishable_key') : $this->get_option('publishable_key');
-		// This action hook saves the settings
-		// add_action('woocommerce_update_options_payment_gateways_' . $this->id, array($this, 'process_admin_options'));
+		$this->orderDescription = $this->orderDescription ? $this->orderDescription : $this->get_option('orderDescription');
 
 		// We need custom JavaScript to obtain a token
 		add_action('wp_enqueue_scripts', array($this, 'payment_scripts'));
-
+		add_action( 'woocommerce_update_options_payment_gateways_' . $this->id, array( $this, 'process_admin_options' ));
 		// You can also register a webhook here
 		add_action('woocommerce_api_zlp-callback', array($this, 'webhook'));
-
-		// add_action('zlp_query_status', array($this, 'zlp_queryOrderStatus'));
 	}
 
 	/**
@@ -157,11 +151,18 @@ class WC_Gateway_ZaloPay extends WC_Payment_Gateway
 		$userName = wp_get_current_user()->user_login;
 		$order = wc_get_order($orderID);
 		$items = $order->get_items();
+		if ($this->orderDescription != "") {
+			if (substr($this->orderDescription, -1) === '#') {
+				$desc = $this->orderDescription . $orderID;
+			}
+		}else {
+			$desc = 'Payment for order - '.$orderID;
+		}
 		$args = [
 			'user' => $userName != "" ? $userName : 'guest',
 			'orderID' => $orderID,
-			'total' => $order->get_total(),
-			'description' => 'Description for order - '.$orderID,
+			'total' => round($order->get_total()),
+			'description' => $desc,
 		];
 		$itemArr = [];
 		if (!is_wp_error($items)) {
@@ -222,13 +223,13 @@ class WC_Gateway_ZaloPay extends WC_Payment_Gateway
 
 		$request = array();
 		$order_currency = $order->get_currency();
-	
-		// if ( $order_currency != ZLP_CURRENCY ) {
-		// 	return false;
-		// }
+
+		if ( $order_currency != ZLP_CURRENCY ) {
+			return false;
+		}
 
 		if ( !is_null( $amount ) ) {
-			$request['amount'] = $amount;
+			$request['amount'] = round($amount);
 		}
 		
 		$request['order_id'] = $order_id;
@@ -239,10 +240,10 @@ class WC_Gateway_ZaloPay extends WC_Payment_Gateway
 		$request = apply_filters( 'wc_zlp_refund_request', $request, $order );
 		$response = WC_ZaloPay_API::request($request, ZLP_REFUND_API);
 
-		if ( 1 > $response->return_code || is_wp_error($response) ) {
+		if ( RETURNCODE_SUCCESS > $response->return_code || is_wp_error($response) ) {
 			WC_ZaloPay_Logger::log( "Refund Error for order {$order_id}. Reason: {$response->return_message} ");
 			return false;
-		} elseif ($response->return_code == 1 || $response->return_code == 3) {
+		} else{
 			$refund_message = sprintf( __( 'Refunded %1$s%2$s - Reason: %3$s', 'woocommerce-gateway-zalopay' ), $amount, $order->get_currency(), $reason );
 
 			$order->add_order_note( $refund_message );
@@ -283,8 +284,7 @@ class WC_Gateway_ZaloPay extends WC_Payment_Gateway
 		WC_ZaloPay_Logger::log( 'Processing response: ' . print_r( $response, true ) );
 
 		$orderID = $order->get_id();
-		// var_dump("process-response");die;
-		//! ZaloPay handle
+
 		$order_stock_reduced = $order->get_meta( '_order_stock_reduced', true );
 
 		if ( ! $order_stock_reduced ) {
@@ -294,51 +294,6 @@ class WC_Gateway_ZaloPay extends WC_Payment_Gateway
 		$order->payment_complete( $orderID );
 		$timestamp = wp_next_scheduled( ZLP_QUERY_QUEUE, [$orderID] );
 		wp_unschedule_event( $timestamp, ZLP_QUERY_QUEUE, [$orderID]);
-		//! End
-		$captured = ( isset( $response->captured ) && $response->captured ) ? 'yes' : 'no';
-
-		if ( 'yes' === $captured ) {
-			// /**
-			//  * Charge can be captured but in a pending state. Payment methods
-			//  * that are asynchronous may take couple days to clear. Webhook will
-			//  * take care of the status changes.
-			//  */
-			// if ( 'pending' === $response->status ) {
-			// 	$order_stock_reduced = $order->get_meta( '_order_stock_reduced', true );
-
-			// 	if ( ! $order_stock_reduced ) {
-			// 		wc_reduce_stock_levels( $order_id );
-			// 	}
-
-			// 	$order->set_transaction_id( $response->id );
-			// 	/* translators: transaction id */
-			// 	$order->update_status( 'on-hold', sprintf( __( 'Stripe charge awaiting payment: %s.', 'woocommerce-gateway-stripe' ), $response->id ) );
-			// }
-
-			// if ( 'succeeded' === $response->status ) {
-			// 	$order->payment_complete( $response->id );
-
-			// 	/* translators: transaction id */
-			// 	$message = sprintf( __( 'Stripe charge complete (Charge ID: %s)', 'woocommerce-gateway-stripe' ), $response->id );
-			// 	$order->add_order_note( $message );
-			// }
-
-			// if ( 'failed' === $response->status ) {
-			// 	$localized_message = __( 'Payment processing failed. Please retry.', 'woocommerce-gateway-stripe' );
-			// 	$order->add_order_note( $localized_message );
-			// 	throw new WC_ZaloPay_Exception( print_r( $response, true ), $localized_message );
-			// }
-		} else {
-			// $order->set_transaction_id( $response->id );
-
-			// if ( $order->has_status( array( 'pending', 'failed' ) ) ) {
-			// 	wc_reduce_stock_levels( $order_id );
-			// }
-
-			// /* translators: transaction id */
-			// $order->update_status( 'on-hold', sprintf( __( 'Stripe charge authorized (Charge ID: %s). Process order to take payment, or cancel to remove the pre-authorization.', 'woocommerce-gateway-stripe' ), $response->id ) );
-		}
-
 
 		if ( is_callable( array( $order, 'save' ) ) ) {
 			$order->save();

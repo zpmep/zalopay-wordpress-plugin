@@ -14,7 +14,7 @@ class WC_ZaloPay_API
 	/**
 	 * Stripe API Endpoint
 	 */
-	const ENDPOINT           = 'https://openapi.zalopay.vn/v2/';
+	const ENDPOINT         = 'https://openapi.zalopay.vn/v2/';
 	const SANDBOX_ENDPOINT = 'https://sb-openapi.zalopay.vn/v2/';
 
 	/**
@@ -127,12 +127,13 @@ class WC_ZaloPay_API
 			'description' => $data['description'],
 			'item' => $data['item'],
 			'embed_data' => $data['embed_data'],
-			"bank_code" => "zalopayapp"
+			"bank_code" => wp_is_mobile() ? "zalopayapp" : ""
 		];
 		$macData = $postData["app_id"] . "|" . $postData["app_trans_id"] . "|" . $postData["app_user"] . "|" . $postData["amount"]
 			. "|" . $postData["app_time"] . "|" . $postData["embed_data"] . "|" . $postData["item"];
 		$postData["mac"] = hash_hmac("sha256", $macData, self::getKey1());
-
+		$postData["source"] = "web";
+		
 		// Save App Trans ID To PostMeta
 		update_post_meta($data['order_id'], 'zlp_app_trans_id', $postData["app_trans_id"]);
 		update_post_meta($data['order_id'], 'zlp_callback_received', false);
@@ -150,7 +151,7 @@ class WC_ZaloPay_API
 		return $postData;
 	}
 	/**
-	 * Send the request to Stripe's API
+	 * Send the request to ZaloPay's API
 	 *
 	 * @since 3.1.0
 	 * @version 4.0.6
@@ -159,7 +160,7 @@ class WC_ZaloPay_API
 	 * @param string $method
 	 * @param bool $with_headers To get the response with headers.
 	 * @return stdClass|array
-	 * @throws WC_Stripe_Exception
+	 * @throws WC_ZaloPay_Exception
 	 */
 	public static function request($data, $api = ZLP_CREATE_ORDER_API, $method = 'POST', $with_headers = false)
 	{
@@ -179,7 +180,7 @@ class WC_ZaloPay_API
 		}
 
 		WC_ZaloPay_Logger::log("{$api} postData: " . print_r($postData, true));
-		$response = wp_safe_remote_post(
+		$response = wp_remote_post(
 			self::getEndpoint() . $api,
 			array(
 				'method'  => $method,
