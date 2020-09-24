@@ -132,8 +132,7 @@ class WC_ZaloPay_API
 		$macData = $postData["app_id"] . "|" . $postData["app_trans_id"] . "|" . $postData["app_user"] . "|" . $postData["amount"]
 			. "|" . $postData["app_time"] . "|" . $postData["embed_data"] . "|" . $postData["item"];
 		$postData["mac"] = hash_hmac("sha256", $macData, self::getKey1());
-		$postData["source"] = "web";
-		
+
 		// Save App Trans ID To PostMeta
 		update_post_meta($data['order_id'], 'zlp_app_trans_id', $postData["app_trans_id"]);
 		update_post_meta($data['order_id'], 'zlp_callback_received', false);
