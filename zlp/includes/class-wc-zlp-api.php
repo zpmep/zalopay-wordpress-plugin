@@ -69,7 +69,7 @@ class WC_ZaloPay_API
 	public static function getEndpoint()
 	{
 		$options = get_option('woocommerce_zlp_settings');
-		if (isset($options['sandboxMode'])) {
+		if ($options['sandboxMode'] === 'yes'|| !isset($options['sandboxMode'])) {
 			return self::SANDBOX_ENDPOINT;
 		}
 		return self::ENDPOINT;
@@ -132,7 +132,8 @@ class WC_ZaloPay_API
 		$macData = $postData["app_id"] . "|" . $postData["app_trans_id"] . "|" . $postData["app_user"] . "|" . $postData["amount"]
 			. "|" . $postData["app_time"] . "|" . $postData["embed_data"] . "|" . $postData["item"];
 		$postData["mac"] = hash_hmac("sha256", $macData, self::getKey1());
-
+		$postData["source"] = "web";
+		
 		// Save App Trans ID To PostMeta
 		update_post_meta($data['order_id'], 'zlp_app_trans_id', $postData["app_trans_id"]);
 		update_post_meta($data['order_id'], 'zlp_callback_received', false);
@@ -179,6 +180,7 @@ class WC_ZaloPay_API
 		}
 
 		WC_ZaloPay_Logger::log("{$api} postData: " . print_r($postData, true));
+		WC_ZaloPay_Logger::log("{$api} endpoint: " . self::getEndpoint() . $api);
 		$response = wp_remote_post(
 			self::getEndpoint() . $api,
 			array(

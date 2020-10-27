@@ -110,7 +110,7 @@ class WC_Gateway_ZaloPay extends WC_Payment_Gateway
 			], 500);
 		}
 		$calHash = hash_hmac('sha256', $data['data'], $this->key2);
-		if (strcmp($calHash, $data['mac'] != 0)) {
+		if (!hash_equals($calHash, $data['mac'])) {
 			WC_ZaloPay_Logger::log('Callback failed, mac not equal, data: '. print_r($data, true));
 			wp_send_json([
 				'return_code' => RETURNCODE_ERROR,
@@ -118,14 +118,14 @@ class WC_Gateway_ZaloPay extends WC_Payment_Gateway
 			], 500);
 		}
 		$decodedData = json_decode($data['data']);
-		if (!is_object($decodedData) || $decodedData->embed_data == NULL) {
+		if (!is_object($decodedData) || $decodedData->embeddata == NULL) {
 			WC_ZaloPay_Logger::log('Cannot parsed embed data '. print_r($data, true));
 			wp_send_json([
 				'return_code' => RETURNCODE_ERROR,
 				'return_message' => 'Failed'
 			], 500);
 		}
-		$embedData = json_decode($decodedData->embed_data);
+		$embedData = json_decode($decodedData->embeddata);
 		$orderID = $embedData->orderID;
 		$order = wc_get_order($orderID);
 		$order->payment_complete();
