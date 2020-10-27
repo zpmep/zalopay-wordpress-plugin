@@ -118,14 +118,14 @@ class WC_Gateway_ZaloPay extends WC_Payment_Gateway
 			], 500);
 		}
 		$decodedData = json_decode($data['data']);
-		if (!is_object($decodedData) || $decodedData->embeddata == NULL) {
+		if (!is_object($decodedData) || $decodedData->embed_data == NULL) {
 			WC_ZaloPay_Logger::log('Cannot parsed embed data '. print_r($data, true));
 			wp_send_json([
 				'return_code' => RETURNCODE_ERROR,
 				'return_message' => 'Failed'
 			], 500);
 		}
-		$embedData = json_decode($decodedData->embeddata);
+		$embedData = json_decode($decodedData->embed_data);
 		$orderID = $embedData->orderID;
 		$order = wc_get_order($orderID);
 		$order->payment_complete();
