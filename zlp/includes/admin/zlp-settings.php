@@ -49,6 +49,13 @@ return apply_filters(
 			'default'     => __( 'Payment for order #', 'woocommerce-gateway-zalopay' ),
 			'desc_tip'    => true,
 		),
+		'gatewayDescription'                   => array(
+			'title'       => __( 'Gateway Description', 'woocommerce-gateway-zalopay' ),
+			'type'        => 'text',
+			'description' => __( 'Description for gateway', 'woocommerce-gateway-zalopay' ),
+			'default'     => __( 'You will be redirected to ZaloPay.', 'woocommerce-gateway-zalopay' ),
+			'desc_tip'    => true,
+		),
 		'logging'                   => array(
 			'title'       => __( 'Logging', 'woocommerce-gateway-zalopay' ),
 			'label'       => __( 'Log debug messages', 'woocommerce-gateway-zalopay' ),

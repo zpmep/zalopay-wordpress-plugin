@@ -15,7 +15,7 @@ class WC_Gateway_ZaloPay extends WC_Payment_Gateway
 	public $key2;
 	public $sandboxMode;
 	public $orderDescription;
-
+	public $gatewayDescription;
 	/**
 	 * Constructor
 	 */
@@ -37,7 +37,7 @@ class WC_Gateway_ZaloPay extends WC_Payment_Gateway
 		// Load the settings.
 		$this->init_settings();
 		$this->title = __('ZaloPay', 'woocommerce-gateway-zalopay');
-		$this->description = __('You will be redirected to ZaloPay.', 'woocommerce-gateway-zalopay');
+		$this->description = $this->gatewayDescription ? $this->gatewayDescription : $this->get_option('gatewayDescription');
 		$this->appID = $this->appID ? $this->appID : $this->get_option('appID');
 		$this->key1 = $this->key1 ? $this->key1 : $this->get_option('key1');
 		$this->key2 = $this->key2 ? $this->key2 : $this->get_option('key2');
