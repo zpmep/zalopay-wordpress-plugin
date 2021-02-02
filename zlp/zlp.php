@@ -125,6 +125,8 @@ function zlp_init() {
 				require_once dirname( __FILE__ ) . '/includes/class-wc-zlp-logger.php';
 				include_once dirname( __FILE__ ) . '/includes/class-wc-zlp-api.php';
 				require_once dirname( __FILE__ ) . '/includes/class-wc-gateway-zlp.php';
+				require_once dirname( __FILE__ ) . '/includes/class-wc-zlp-atm.php';
+				require_once dirname( __FILE__ ) . '/includes/class-wc-zlp-cc.php';
 				require_once dirname( __FILE__ ) . '/includes/class-wc-zlp-order-handler.php';
 				add_filter( 'woocommerce_payment_gateways', array( $this, 'add_gateways' ) );
 				add_filter( 'plugin_action_links_' . plugin_basename( __FILE__ ), array( $this, 'plugin_action_links' ) );
@@ -183,6 +185,8 @@ function zlp_init() {
 			 */
 			public function add_gateways( $methods ) {
 				$methods[] = 'WC_Gateway_ZaloPay';
+				$methods[] = 'WC_Gateway_ZaloPay_ATM';
+				$methods[] = 'WC_Gateway_ZaloPay_CC';
 				return $methods;
 			}
 
@@ -194,7 +198,9 @@ function zlp_init() {
 			 */
 			public function filter_gateway_order_admin( $sections ) {
 				unset( $sections['zlp'] );
+				unset( $sections['zlp_atm'] );
 				$sections['zlp']            = __( 'ZaloPay', 'woocommerce-gateway-zalopay' );
+				$sections['zlp_atm']       	= __( 'ZaloPay (ATM)', 'woocommerce-gateway-zalopay' );
 				return $sections;
 			}			
 		}

@@ -50,7 +50,6 @@ class WC_ZaloPay_Order_Handler {
 	public function process_zalopay_redirect( $orderID) {
 		
 		try {
-			// var_dump("cc");die;
 			if ( empty( $orderID ) ) {
 				return;
 			}
@@ -65,6 +64,7 @@ class WC_ZaloPay_Order_Handler {
 				return;
 			}
 			$appTransID = get_post_meta($orderID,'zlp_app_trans_id', true);	
+
 			$order_info = WC_ZaloPay_API::request(['app_trans_id' => $appTransID], ZLP_QUERY_ORDER_STATUS_API);
 			if (is_wp_error($order_info)) {
 				WC_ZaloPay_Logger::log("Handle redirect failed \"wp_error\" for order {$orderID} response:".  json_encode($order_info, JSON_UNESCAPED_UNICODE));

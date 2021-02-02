@@ -69,7 +69,7 @@ class WC_ZaloPay_API
 	public static function getEndpoint()
 	{
 		$options = get_option('woocommerce_zlp_settings');
-		if ($options['sandboxMode'] === 'yes'|| !isset($options['sandboxMode'])) {
+		if (!isset($options['sandboxMode']) || $options['sandboxMode'] === 'yes') {
 			return self::SANDBOX_ENDPOINT;
 		}
 		return self::ENDPOINT;
@@ -127,16 +127,18 @@ class WC_ZaloPay_API
 			'description' => $data['description'],
 			'item' => $data['item'],
 			'embed_data' => $data['embed_data'],
-			"bank_code" => wp_is_mobile() ? "zalopayapp" : ""
+			'bank_code' => wp_is_mobile() ? "zalopayapp" : $data['bank_code']
 		];
+
+
 		$macData = $postData["app_id"] . "|" . $postData["app_trans_id"] . "|" . $postData["app_user"] . "|" . $postData["amount"]
 			. "|" . $postData["app_time"] . "|" . $postData["embed_data"] . "|" . $postData["item"];
 		$postData["mac"] = hash_hmac("sha256", $macData, self::getKey1());
 		$postData["source"] = "web";
 		
 		// Save App Trans ID To PostMeta
-		update_post_meta($data['order_id'], 'zlp_app_trans_id', $postData["app_trans_id"]);
-		update_post_meta($data['order_id'], 'zlp_callback_received', false);
+		update_post_meta($data['orderID'], 'zlp_app_trans_id', $postData["app_trans_id"]);
+		update_post_meta($data['orderID'], 'zlp_callback_received', false);
 		return $postData;
 	}
 
@@ -173,9 +175,6 @@ class WC_ZaloPay_API
 				break;
 			default:
 				$postData = self::generateCreateOrderRequest($data);
-				// Save App Trans ID To PostMeta
-				update_post_meta($data['orderID'], 'zlp_app_trans_id', $postData["app_trans_id"]);
-				update_post_meta($data['orderID'], 'zlp_callback_received', false);
 				break;
 		}
 

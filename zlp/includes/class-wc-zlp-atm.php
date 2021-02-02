@@ -8,7 +8,7 @@ if (!defined('ABSPATH')) {
  *
  * @extends WC_Payment_Gateway
  */
-class WC_Gateway_ZaloPay extends WC_Payment_Gateway
+class WC_Gateway_ZaloPay_ATM extends WC_Payment_Gateway
 {
 	public $appID;
 	public $key1;
@@ -22,13 +22,13 @@ class WC_Gateway_ZaloPay extends WC_Payment_Gateway
 
 	public function __construct()
 	{
-		$this->id = 'zlp';
+		$this->id = 'zlp_atm';
 		$this->icon = plugins_url('assets/images/logozlp1.png', dirname(__FILE__));
 		$this->has_fields = false;
-		$this->method_description = __('Allow user to pay by scanning QR code in Zalopay/Zalo App', 'woocommerce-gateway-zalopay');
+		$this->method_description = __('Allow user to pay via Internet Banking', 'woocommerce-gateway-zalopay-atm');
 		$this->supports           = array(
 			'products',
-			'refunds',
+            'refunds',
 		);
 
 		// Method with all the options fields
@@ -36,7 +36,7 @@ class WC_Gateway_ZaloPay extends WC_Payment_Gateway
 
 		// Load the settings.
 		$this->init_settings();
-		$this->title = __('ZaloPay Gateway (e-Wallet)', 'woocommerce-gateway-zalopay');
+		$this->title = __('ZaloPay Gateway (ATM)', 'woocommerce-gateway-zalopay-atm');
 		$this->description = $this->gatewayDescription ? $this->gatewayDescription : $this->get_option('gatewayDescription');
 		$this->appID = $this->appID ? $this->appID : $this->get_option('appID');
 		$this->key1 = $this->key1 ? $this->key1 : $this->get_option('key1');
@@ -134,7 +134,7 @@ class WC_Gateway_ZaloPay extends WC_Payment_Gateway
 			wc_reduce_stock_levels($orderID);
 		}
 		update_post_meta($orderID, 'zlp_callback_received', true);
-		update_post_meta($orderID, 'zp_trans_id', $decodedData->zp_trans_id);
+		update_post_meta($orderID, 'zp_trans_id', $data->zp_trans_id);
 		update_option('webhook_debug', $data);
 		wp_send_json([
 			'return_code' => RETURNCODE_SUCCESS,
@@ -172,12 +172,13 @@ class WC_Gateway_ZaloPay extends WC_Payment_Gateway
 		}
 
 		$embeddata = [
-			"redirecturl" => add_query_arg(['order-received' => $orderID, 'key' => $order->get_order_key(), 'page_id' => wc_get_page_id('checkout')], get_home_url()),
-			"orderID" => $orderID
+			'redirecturl' => add_query_arg(['order-received' => $orderID, 'key' => $order->get_order_key(), 'page_id' => wc_get_page_id('checkout')], get_home_url()),
+			'orderID' => $orderID,
+			'bankgroup' => 'ATM'
 		];
 		$args['item'] = json_encode($itemArr, JSON_UNESCAPED_UNICODE);
 		$args['embed_data'] = json_encode($embeddata, JSON_UNESCAPED_UNICODE);
-		$args['bank_code'] = 'zalopayapp';
+
 		$response = WC_ZaloPay_API::request($args);
 		if (is_wp_error($response)) {
 			wc_add_notice('Connection Error!', 'error');
@@ -244,7 +245,7 @@ class WC_Gateway_ZaloPay extends WC_Payment_Gateway
 			WC_ZaloPay_Logger::log( "Refund Error for order {$order_id}. Reason: {$response->return_message} ");
 			return false;
 		} else{
-			$refund_message = sprintf( __( 'Refunded %1$s%2$s - Reason: %3$s', 'woocommerce-gateway-zalopay' ), $amount, $order->get_currency(), $reason );
+			$refund_message = sprintf( __( 'Refunded %1$s%2$s - Reason: %3$s', 'woocommerce-gateway-zalopay-atm' ), $amount, $order->get_currency(), $reason );
 
 			$order->add_order_note( $refund_message );
 			WC_ZaloPay_Logger::log( "Refund order {$order_id} success");
@@ -253,11 +254,11 @@ class WC_Gateway_ZaloPay extends WC_Payment_Gateway
 	}
 
 	public function displayAdminSettingsWebhookDescription() {
-		return sprintf( __( 'You must add the following URL <a href="%s" target="_blank">%s</a> to your <a href="%s" target="_blank">ZaloPay callback URL</a>. This will enable you to receive notifications on the charge statuses.', 'woocommerce-gateway-zalopay' ),self::getCallbackURL(), self::getCallbackURL(), self::getZaloPayCallBackSettingPage() );
+		return sprintf( __( 'You must add the following URL <a href="%s" target="_blank">%s</a> to your <a href="%s" target="_blank">ZaloPay callback URL</a>. This will enable you to receive notifications on the charge statuses.', 'woocommerce-gateway-zalopay-atm' ),self::getCallbackURL(), self::getCallbackURL(), self::getZaloPayCallBackSettingPage() );
 	}
 
 	public function displayAdminSettingsRedirectURLDescription() {
-		return sprintf( __( 'Default Redirect URL <a href="%s" target="_blank">%s</a>.', 'woocommerce-gateway-zalopay' ),self::getRedirectURL(), self::getRedirectURL());
+		return sprintf( __( 'Default Redirect URL <a href="%s" target="_blank">%s</a>.', 'woocommerce-gateway-zalopay-atm' ),self::getRedirectURL(), self::getRedirectURL());
 	}
 
 
@@ -278,7 +279,7 @@ class WC_Gateway_ZaloPay extends WC_Payment_Gateway
 	}
 
 	/**
-	 * Store extra meta data for an order from a ZaloPay Response.
+	 * Store extra meta data for an order from a Stripe Response.
 	 */
 	public function process_response( $response, $order ) {
 		WC_ZaloPay_Logger::log( 'Processing response: ' . print_r( $response, true ) );
