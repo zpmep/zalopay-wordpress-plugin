@@ -10,7 +10,7 @@ if (!defined('ABSPATH')) {
  */
 class WC_ZaloPay_API
 {
-
+	date_default_timezone_set ('Asia/Ho_Chi_Minh');
 	/**
 	 * Stripe API Endpoint
 	 */
