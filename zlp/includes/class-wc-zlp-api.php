@@ -2,7 +2,7 @@
 if (!defined('ABSPATH')) {
 	exit;
 }
-date_default_timezone_set ('Asia/Ho_Chi_Minh');
+date_default_timezone_set('Asia/Ho_Chi_Minh');
 /**
  * WC_Stripe_API class.
  *
